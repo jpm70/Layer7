@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador Interactivo Modelo OSI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @keyframes slide-right {
+            0% { left: -20%; }
+            100% { left: 100%; }
+        }
+        .animate-slide-right {
+            position: absolute;
+            animation: slide-right 0.8s linear infinite;
+        }
+        .scale-102:hover {
+            transform: scale(1.02);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 font-sans">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        const OSI_DATA = [
+            {
+                layer: 7,
+                name: "Aplicación",
+                pdu: "Datos",
+                description: "Interfaz directa con el usuario y servicios de red.",
+                protocols: ["HTTP", "DNS", "FTP", "SMTP"],
+                color: "bg-red-500",
+                textColor: "text-red-600",
+                details: "Es la capa que el usuario ve. Aquí es donde las aplicaciones (como navegadores o clientes de correo) interactúan con la red."
+            },
+            {
+                layer: 6,
+                name: "Presentación",
+                pdu: "Datos",
+                description: "Traducción, cifrado y compresión de datos.",
+                protocols: ["SSL", "SSH", "IMAP", "MPEG", "JPEG"],
+                color: "bg-orange-500",
+                textColor: "text-orange-600",
+                details: "Asegura que la información enviada por la capa de aplicación de un sistema sea legible para la capa de aplicación de otro."
+            },
+            {
+                layer: 5,
+                name: "Sesión",
+                pdu: "Datos",
+                description: "Manejo de sesiones entre aplicaciones.",
+                protocols: ["NetBIOS", "SAP", "RPC", "PPTP"],
+                color: "bg-yellow-500",
+                textColor: "text-yellow-600",
+                details: "Establece, gestiona y finaliza las conexiones entre las aplicaciones locales y remotas."
+            },
+            {
+                layer: 4,
+                name: "Transporte",
+                pdu: "Segmentos",
+                description: "Transferencia confiable de datos entre puntos.",
+                protocols: ["TCP", "UDP"],
+                color: "bg-green-500",
+                textColor: "text-green-600",
+                details: "Segmenta los datos y se encarga del control de flujo y la corrección de errores."
+            },
+            {
+                layer: 3,
+                name: "Red",
+                pdu: "Paquetes",
+                description: "Determinación de ruta e direccionamiento lógico.",
+                protocols: ["IP", "ICMP", "IPsec", "IGMP"],
+                color: "bg-blue-500",
+                textColor: "text-blue-600",
+                details: "Decide físicamente qué ruta tomarán los datos basándose en las direcciones IP."
+            },
+            {
+                layer: 2,
+                name: "Enlace de Datos",
+                pdu: "Tramas (Frames)",
+                description: "Direccionamiento físico y acceso al medio.",
+                protocols: ["Ethernet", "PPP", "Switch", "Bridge"],
+                color: "bg-indigo-500",
+                textColor: "text-indigo-600",
+                details: "Proporciona tránsito de datos confiable a través de un enlace físico usando direcciones MAC."
+            },
+            {
+                layer: 1,
+                name: "Física",
+                pdu: "Bits",
+                description: "Transmisión binaria de datos por el medio.",
+                protocols: ["Coaxial", "Fibra Óptica", "Wireless", "Hubs"],
+                color: "bg-purple-500",
+                textColor: "text-purple-600",
+                details: "Se refiere a los medios físicos como cables, conectores y señales eléctricas o de luz."
+            }
+        ];
+
+        const QUESTIONS = [
+            {
+                q: "¿En qué capa operan los Routers y se manejan las direcciones IP?",
+                options: ["Transporte", "Red", "Enlace de Datos", "Física"],
+                correct: 1
+            },
+            {
+                q: "¿Cuál es la PDU de la Capa 4 (Transporte)?",
+                options: ["Bits", "Tramas", "Paquetes", "Segmentos"],
+                correct: 3
+            },
+            {
+                q: "¿Qué capa se encarga del cifrado y la compresión de datos?",
+                options: ["Aplicación", "Presentación", "Sesión", "Red"],
+                correct: 1
+            }
+        ];
+
+        function App() {
+            const [activeTab, setActiveTab] = useState('explore');
+            const [selectedLayer, setSelectedLayer] = useState(OSI_DATA[0]);
+            const [simStep, setSimStep] = useState(-1);
+            const [quizIndex, setQuizIndex] = useState(0);
+            const [score, setScore] = useState(0);
+            const [showResult, setShowResult] = useState(null);
+
+            useEffect(() => {
+                let timer;
+                if (simStep >= 0 && simStep < 15) {
+                    timer = setTimeout(() => setSimStep(prev => prev + 1), 800);
+                } else if (simStep === 15) {
+                    setSimStep(-1);
+                }
+                return () => clearTimeout(timer);
+            }, [simStep]);
+
+            const handleAnswer = (idx) => {
+                if (idx === QUESTIONS[quizIndex].correct) {
+                    setScore(s => s + 1);
+                    setShowResult('correct');
+                } else {
+                    setShowResult('wrong');
+                }
+                setTimeout(() => {
+                    setShowResult(null);
+                    setQuizIndex(prev => prev + 1 >= QUESTIONS.length ? -1 : prev + 1);
+                }, 1000);
+            };
+
+            return (
+                <div className="min-h-screen p-4 md:p-8">
+                    <header className="max-w-6xl mx-auto mb-8 text-center">
+                        <h1 className="text-4xl font-extrabold text-slate-800 mb-2">Simulador Maestro OSI</h1>
+                        <div className="flex justify-center gap-2 mt-6">
+                            <button onClick={() => setActiveTab('explore')} className={`px-4 py-2 rounded-full font-medium ${activeTab === 'explore' ? 'bg-indigo-600 text-white' : 'bg-white text-slate-600'}`}>Explorar</button>
+                            <button onClick={() => setActiveTab('simulate')} className={`px-4 py-2 rounded-full font-medium ${activeTab === 'simulate' ? 'bg-indigo-600 text-white' : 'bg-white text-slate-600'}`}>Simular Envío</button>
+                            <button onClick={() => setActiveTab('quiz')} className={`px-4 py-2 rounded-full font-medium ${activeTab === 'quiz' ? 'bg-indigo-600 text-white' : 'bg-white text-slate-600'}`}>Quiz</button>
+                        </div>
+                    </header>
+
+                    <main className="max-w-6xl mx-auto">
+                        {activeTab === 'explore' && (
+                            <div className="grid md:grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    {[...OSI_DATA].reverse().map(item => (
+                                        <button key={item.layer} onClick={() => setSelectedLayer(item)} className={`w-full p-4 rounded-xl border-2 flex items-center bg-white ${selectedLayer.layer === item.layer ? 'border-indigo-500 shadow-md' : 'border-transparent opacity-80'}`}>
+                                            <div className={`w-8 h-8 rounded ${item.color} text-white flex items-center justify-center mr-3 font-bold text-xs`}>{item.layer}</div>
+                                            <span className="font-bold">{item.name}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                                <div className="bg-white p-8 rounded-3xl shadow-xl border border-slate-100">
+                                    <h2 className="text-3xl font-bold mb-4">{selectedLayer.name}</h2>
+                                    <p className="text-slate-600 mb-6">{selectedLayer.description}</p>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="bg-slate-50 p-4 rounded-xl">
+                                            <span className="text-xs font-bold text-slate-400 block mb-1 uppercase">PDU</span>
+                                            <span className="font-bold text-indigo-600">{selectedLayer.pdu}</span>
+                                        </div>
+                                        <div className="bg-slate-50 p-4 rounded-xl">
+                                            <span className="text-xs font-bold text-slate-400 block mb-1 uppercase">Protocolos</span>
+                                            <span className="text-xs">{selectedLayer.protocols.join(', ')}</span>
+                                        </div>
+                                    </div>
+                                    <p className="mt-6 italic text-sm text-slate-500 border-t pt-4">{selectedLayer.details}</p>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'simulate' && (
+                            <div className="bg-white p-8 rounded-3xl shadow-xl border border-slate-100">
+                                <div className="flex justify-between items-center mb-8">
+                                    <h2 className="text-2xl font-bold">Laboratorio de Encapsulación</h2>
+                                    <button onClick={() => setSimStep(0)} className="bg-indigo-600 text-white px-6 py-2 rounded-xl font-bold">Iniciar Envío</button>
+                                </div>
+                                <div className="grid grid-cols-3 gap-4 items-center">
+                                    <div className="space-y-1">
+                                        <span className="text-center block text-[10px] font-bold text-slate-400 mb-2 uppercase">Emisor</span>
+                                        {OSI_DATA.slice().reverse().map((l, i) => (
+                                            <div key={i} className={`p-2 rounded border text-xs font-bold ${simStep === i ? 'border-indigo-500 bg-indigo-50' : 'border-slate-100 opacity-50'}`}>{l.name}</div>
+                                        ))}
+                                    </div>
+                                    <div className="flex flex-col items-center">
+                                        <div className="w-full h-1 bg-slate-100 relative rounded-full overflow-hidden">
+                                            {simStep === 7 && <div className="h-full w-20 bg-indigo-500 animate-slide-right"></div>}
+                                        </div>
+                                        <div className="mt-4 p-4 bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl text-center">
+                                            <div className="text-[10px] font-bold text-slate-400 uppercase">PDU</div>
+                                            <div className="font-black text-indigo-600">
+                                                {simStep === -1 ? "-" : simStep <= 6 ? OSI_DATA[6-simStep].pdu : simStep === 7 ? "0101 Bits" : OSI_DATA[simStep-8].pdu}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <span className="text-center block text-[10px] font-bold text-slate-400 mb-2 uppercase">Receptor</span>
+                                        {OSI_DATA.slice().reverse().map((l, i) => {
+                                            const revIdx = 14 - (6 - i);
+                                            return <div key={i} className={`p-2 rounded border text-xs font-bold ${simStep === revIdx ? 'border-indigo-500 bg-indigo-50' : 'border-slate-100 opacity-50'}`}>{l.name}</div>
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'quiz' && (
+                            <div className="max-w-md mx-auto bg-white p-8 rounded-3xl shadow-xl">
+                                {quizIndex === -1 ? (
+                                    <div className="text-center">
+                                        <h2 className="text-2xl font-bold mb-4">¡Quiz Terminado!</h2>
+                                        <p className="mb-6">Puntuación: {score} de {QUESTIONS.length}</p>
+                                        <button onClick={() => {setQuizIndex(0); setScore(0);}} className="bg-indigo-600 text-white px-6 py-2 rounded-xl">Reiniciar</button>
+                                    </div>
+                                ) : (
+                                    <div>
+                                        <h2 className="text-xl font-bold mb-6">{QUESTIONS[quizIndex].q}</h2>
+                                        <div className="space-y-3">
+                                            {QUESTIONS[quizIndex].options.map((opt, i) => (
+                                                <button key={i} onClick={() => handleAnswer(i)} disabled={showResult !== null} className={`w-full p-4 text-left border-2 rounded-xl transition-all ${showResult === null ? 'hover:border-indigo-500' : 'opacity-50'}`}>
+                                                    {opt}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </main>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
